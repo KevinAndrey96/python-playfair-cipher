@@ -1,109 +1,106 @@
-# Cifrado Polialfabético de Playfair (Matriz 5x5) en Python
+# Cifrado Playfair en Python
 
-[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
-[![NumPy](https://img.shields.io/badge/NumPy-Supported-013243.svg)](https://numpy.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/KevinAndrey96/python-playfair-cipher/actions/workflows/ci.yml/badge.svg)](https://github.com/KevinAndrey96/python-playfair-cipher/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-3776AB)
+![Cobertura](https://img.shields.io/badge/cobertura-100%25-brightgreen)
+![mypy](https://img.shields.io/badge/mypy-strict-2A6DB2)
+[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-yellow.svg)](LICENSE)
 
-Implementación interactiva en Python del **Cifrado de Playfair** para pares de letras (digramas) mediante matrices bidimensionales de $5 \times 5$ con **NumPy**. El proyecto contempla la construcción dinámica de la matriz clave a partir de palabras secretas, el formateo y relleno de digramas con caracteres de escape (`X`), y la aplicación de las tres reglas clásicas de sustitución geométrica.
+Implementación tipada y probada del **cifrado Playfair**, la sustitución por dígrafos que Charles Wheatstone inventó en 1854 y que el ejército británico usó hasta la Primera Guerra Mundial. Construye el cuadrado de 5 x 5 a partir de una clave, cifra y descifra por pares de letras, valida que un criptograma sea posible y ofrece una interfaz de línea de comandos.
 
----
+## Contenido
 
-## 🔐 Fundamento Histórico y Teórico
+- [Cómo funciona](#cómo-funciona)
+- [Uso](#uso)
+- [Arquitectura](#arquitectura)
+- [Pruebas y calidad](#pruebas-y-calidad)
+- [Historia del proyecto](#historia-del-proyecto)
 
-Inventado en 1854 por el científico británico **Charles Wheatstone** pero popularizado y adoptado por **Lord Playfair**, fue el primer sistema práctico de cifrado por sustitución digrámica (cifra pares de letras simultáneamente en lugar de letras individuales).
+## Cómo funciona
 
-Al cifrar digramas, la distribución de frecuencias de los caracteres individuales queda fuertemente enmascarada (pasando de un espacio de 26 letras a uno de $25 \times 25 = 600$ posibles digramas), lo que dificulta significativamente el criptoanálisis de frecuencia monoalfabético.
-
-### 1. Construcción de la Matriz de Clave ($5 \times 5$)
-
-1. Se utiliza una matriz de $5 \times 5$ que aloja 25 letras.
-2. Tradicionalmente, se combinan las letras **I** y **J** en una misma celda (o se omite la **J**, reemplazándola por **I**).
-3. Se escribe la palabra clave eliminando letras duplicadas.
-4. Las casillas vacías restantes se completan en orden alfabético con las letras restantes que no aparecieron en la clave.
+**El cuadrado.** Se escriben las letras de la clave sin repetir y luego el resto del alfabeto; la I y la J comparten casilla. Con la clave `Yoan Pinzon`, la del ejemplo original de 2020:
 
 ```text
-Ejemplo con la clave "MONARCHY":
-M   O   N   A   R
-C   H   Y   B   D
-E   F   G   I/J K
-L   P   Q   S   T
-U   V   W   X   Z
+Y O A N P
+I Z B C D
+E F G H K
+L M Q R S
+T U V W X
 ```
 
-### 2. Preparación del Texto Claro (Reglas de Digramas)
+**Los dígrafos.** El texto se normaliza (mayúsculas, sin tildes, J como I) y se divide en pares. Un par nunca repite letra: entre letras dobles se inserta una X (una Q si la letra doble es X), y una letra final suelta se completa igual. `THIS SECRET MESSAGE IS ENCRYPTED` queda como
 
-1. El texto se limpia de espacios y signos de puntuación y se convierte a mayúsculas.
-2. Si un par contiene dos letras idénticas consecutivas (por ejemplo, `LL`), se inserta una letra de relleno (típicamente `X`: `LX L...`).
-3. Si la longitud total del texto es impar, se añade una `X` final para completar el último digrama.
+```text
+TH IS SE CR ET ME SX SA GE IS EN CR YP TE DX
+```
 
-### 3. Reglas Geométricas de Cifrado
+**La sustitución.** Para cada par:
 
-Para cada par de letras $(A, B)$ ubicadas en las posiciones $(r_1, c_1)$ y $(r_2, c_2)$:
-
-| Caso Geométrico | Regla de Cifrado | Regla de Descifrado |
+| Posición de las dos letras | Al cifrar | Al descifrar |
 | :--- | :--- | :--- |
-| **Misma Fila** ($r_1 = r_2$) | Se reemplaza cada letra por la que está inmediatamente a su **derecha** (con retorno circular al inicio: $(c+1) \pmod 5$). | Se desplaza una posición a la **izquierda** ($(c-1) \pmod 5$). |
-| **Misma Columna** ($c_1 = c_2$) | Se reemplaza cada letra por la que está inmediatamente **debajo** (con retorno circular: $(r+1) \pmod 5$). | Se desplaza una posición hacia **arriba** ($(r-1) \pmod 5$). |
-| **Rectángulo** ($r_1 \ne r_2, c_1 \ne c_2$) | Cada letra se reemplaza por la que está en su **misma fila**, pero en la **columna de la otra letra**: $(r_1, c_2)$ y $(r_2, c_1)$. | Idéntica regla geométrica sobre las columnas cruzadas. |
+| Misma fila | la letra de la derecha de cada una | la de la izquierda |
+| Misma columna | la letra de abajo de cada una | la de arriba |
+| Rectángulo | la esquina en su propia fila | igual, es su propia inversa |
 
----
+Los bordes son circulares. El ejemplo anterior produce `WE DL LK HW LY LF XP QP HF DL HY HW OY YL KP`, el mismo resultado que documentaba el trabajo original, y el ejemplo de Wikipedia (`hide the gold in the tree stump` con la clave `playfair example`) produce `BMODZBXDNABEKUDMUIXMMOUVIF`.
 
-## 📂 Estructura del Repositorio
+Descifrar devuelve los dígrafos con sus rellenos. `remove_fillers` quita las X entre letras iguales y la final, pero no puede distinguir un relleno de una X auténtica en esas posiciones, así que su resultado es una sugerencia y no una inversa exacta.
+
+## Uso
+
+Requiere Python 3.12 o superior y [uv](https://docs.astral.sh/uv/).
+
+```bash
+uv sync
+uv run playfair square "Yoan Pinzon"
+uv run playfair encrypt -k "Yoan Pinzon" --pairs "This secret message is encrypted"
+# WE DL LK HW LY LF XP QP HF DL HY HW OY YL KP
+uv run playfair decrypt -k "Yoan Pinzon" --strip-fillers "WE DL LK HW LY LF XP QP HF DL HY HW OY YL KP"
+# THISSECRETMESSAGEISENCRYPTED
+```
+
+Si se omite el texto, se lee de la entrada estándar. Un criptograma con longitud impar, con J, con símbolos o con un par de letras iguales no puede venir de Playfair: el comando lo rechaza con código 2 y un mensaje en la salida de error.
+
+Como librería:
+
+```python
+from playfair import KeySquare, decrypt, digraphs, encrypt, remove_fillers
+
+KeySquare.from_key("Yoan Pinzon").rows()   # ['YOANP', 'IZBCD', 'EFGHK', 'LMQRS', 'TUVWX']
+digraphs("balloon")                        # ['BA', 'LX', 'LO', 'ON']
+cifrado = encrypt("instruments", "MONARCHY")
+remove_fillers(decrypt(cifrado, "MONARCHY"))  # 'INSTRUMENTS'
+```
+
+## Arquitectura
 
 ```text
-playfair/
-├── main.py          # Script interactivo de consola para cifrar y descifrar
-└── Video URL.txt    # Enlace a demostracion multimedia en YouTube
+src/playfair/
+  square.py   normalización y KeySquare inmutable con posiciones precalculadas
+  cipher.py   dígrafos, sustitución, validación de criptogramas y rellenos
+  cli.py      comandos encrypt, decrypt y square
 ```
 
----
+El cuadrado indexa la posición de cada letra al construirse, así que cifrar es lineal en la longitud del texto. Sin dependencias externas; los criptogramas imposibles se reportan con `CiphertextError`, subclase de `ValueError`.
 
-## 🚀 Requisitos e Instalación
-
-### Prerrequisitos
-
-- **Python** (versión 3.8 o superior).
-- Biblioteca **NumPy**.
-
-### Instalación de Dependencias
+## Pruebas y calidad
 
 ```bash
-pip install numpy
+uv run pytest --cov
+uv run ruff check src tests && uv run ruff format --check src tests
+uv run mypy
 ```
 
----
+27 pruebas con cobertura del 100 % de líneas y ramas. Además de los vectores del trabajo original y de Wikipedia, las pruebas basadas en propiedades con Hypothesis verifican que cualquier clave produce una permutación de las 25 letras, que todo criptograma generado es válido y descifra a sus dígrafos, y que quitar los rellenos recupera exactamente cualquier texto sin X ni Q. El pipeline de GitHub Actions ejecuta Ruff y mypy en modo estricto, las pruebas en Python 3.12, 3.13 y 3.14, una prueba de humo del comando instalado y la construcción del paquete con `twine check`.
 
-## 💻 Guía de Uso
+## Historia del proyecto
 
-Ejecuta el script desde tu terminal:
+El proyecto nació en marzo de 2020 como un script interactivo para la clase de criptografía, con matrices de caracteres de NumPy y un [video explicativo](https://www.youtube.com/watch?v=MPUKMzf_PX4). Aquel script agregaba siempre un par `XX` al final, que viola la regla de no repetir letra en un dígrafo, y solo funcionaba por consola. En 2026 se reescribió como un paquete tipado sin dependencias, con la regla de rellenos corregida, validación de criptogramas, una interfaz de línea de comandos y pruebas automatizadas; además se eliminaron del historial el entorno virtual y los archivos del IDE que se habían versionado. El código original se conserva en el tag [`v0.1-python-coursework-2020`](https://github.com/KevinAndrey96/python-playfair-cipher/tree/v0.1-python-coursework-2020).
 
-```bash
-python main.py
-```
+## Autor
 
-### 1. Cifrado
+**Kevin Andrey Herrera Silva** · [GitHub](https://github.com/KevinAndrey96)
 
-1. Selecciona la opción `1`.
-2. Introduce el texto a cifrar (las letras se convierten automáticamente a mayúsculas y las letras repetidas adyacentes se separan).
-3. Introduce la palabra clave secreta.
-4. El script generará la matriz $5 \times 5$, mostrará la separación en digramas y generará el texto cifrado final.
+## Licencia
 
-### 2. Descifrado
-
-1. Selecciona la opción `2`.
-2. Introduce el criptograma.
-3. Introduce la misma clave.
-4. El script revertirá las reglas geométricas y reconstruirá el mensaje original.
-
----
-
-## 📹 Demostración en Video
-
-Demostración práctica del funcionamiento paso a paso en YouTube:
-[Demostración en YouTube](https://youtu.be/GqfD58_vW8A)
-
----
-
-## 📄 Licencia
-
-Distribuido bajo la Licencia MIT. Consulta el archivo `LICENSE` para más información.
+Distribuido bajo la [licencia MIT](LICENSE).
