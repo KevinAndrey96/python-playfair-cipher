@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "playfair-cipher"
+version = "1.0.0"
+description = "Cifrado Playfair en Python con cuadrado de 5 x 5, reglas de dígrafos, validación de criptogramas y CLI."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Kevin Andrey Herrera Silva", email = "kahs_kevin@hotmail.com" }]
+requires-python = ">=3.12"
+keywords = ["playfair", "cryptography", "classical-cipher", "digraph-cipher"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Security :: Cryptography",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.scripts]
+playfair = "playfair.cli:main"
+
+[project.urls]
+Repository = "https://github.com/KevinAndrey96/python-playfair-cipher"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.170.17",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/playfair"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "PT", "RUF", "N", "PL", "ARG", "RET"]
+ignore = ["PLR2004"]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["playfair"]
+omit = ["*/__main__.py"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
